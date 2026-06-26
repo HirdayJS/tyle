@@ -1,65 +1,149 @@
-import Image from "next/image";
+"use client";
+console.log("URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log("KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+import { useEffect, useMemo, useState } from "react";
+import Header from "@/components/ui/Header";
+import SearchBar from "@/components/ui/SearchBar";
+import FilterChips from "@/components/ui/FilterChips";
+import OutfitCard from "@/components/outfit/OutfitCard";
+import SectionTitle from "@/components/ui/SectionTitle";
+import { filters } from "@/lib/data/filters";
+import { supabase } from "@/lib/data/supabase";
 
-export default function Home() {
+type Outfit = {
+  id: string;
+  title: string;
+  creator: string;
+  filters: string[];
+  tags: string[];
+  image_url: string;
+  likes: number;
+  saves: number;
+  description: string;
+  featured: boolean;
+};
+
+export default function Discover() {
+  const [outfits, setOutfits] = useState<Outfit[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState("All");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    async function loadOutfits() {
+      const { data, error } = await supabase
+        .from("outfits")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Supabase error:", error.message);
+          alert(error.message);
+          return;
+        }
+
+      setOutfits(data || []);
+    }
+
+    loadOutfits();
+  }, []);
+
+  const filteredOutfits = useMemo(() => {
+    return outfits.filter((outfit) => {
+      const outfitFilters = Array.isArray(outfit.filters)
+  ? outfit.filters
+  : String(outfit.filters || "")
+      .split(",")
+      .map((item) => item.trim());
+
+const outfitTags = Array.isArray(outfit.tags)
+  ? outfit.tags
+  : String(outfit.tags || "")
+      .split(",")
+      .map((item) => item.trim());
+
+const matchesFilter =
+  selectedFilter === "All" || outfitFilters.includes(selectedFilter);
+
+const searchText = `${outfit.title} ${outfit.description} ${outfitTags.join(
+  " "
+)} ${outfitFilters.join(" ")}`.toLowerCase();
+
+      return matchesFilter && searchText.includes(search.toLowerCase());
+    });
+  }, [outfits, selectedFilter, search]);
+
+  function saveOutfit(outfit: Outfit) {
+    const saved = JSON.parse(localStorage.getItem("tyle-saved") || "[]");
+
+    const alreadySaved = saved.some((item: Outfit) => item.id === outfit.id);
+
+    if (!alreadySaved) {
+      localStorage.setItem("tyle-saved", JSON.stringify([...saved, outfit]));
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen bg-black pb-28 text-white">
+      <section className="mx-auto max-w-6xl px-5 py-6 md:px-8">
+        <Header />
+
+        <section className="py-12">
+          <SectionTitle
+            overline="Discover"
+            title="Find your next outfit."
+            subtitle="Search, filter, save and create your own version with TYLE."
+          />
+        </section>
+
+        <SearchBar value={search} onChange={setSearch} />
+
+        <FilterChips
+          filters={filters}
+          selected={selectedFilter}
+          onSelect={setSelectedFilter}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+
+        <div className="mb-5 flex items-end justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-white/40">
+              {selectedFilter === "All" ? "All outfits" : selectedFilter}
+            </p>
+            <h3 className="mt-2 text-3xl font-black">
+              {filteredOutfits.length} looks
+            </h3>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {filteredOutfits.map((outfit) => (
+            <OutfitCard
+              key={outfit.id}
+              outfit={{
+                id: Number(outfit.id),
+                title: outfit.title,
+                creator: outfit.creator,
+                filters: Array.isArray(outfit.filters)
+    ? outfit.filters
+    : String(outfit.filters || "")
+        .replace(/[{}]/g, "")
+        .split(",")
+        .map((s) => s.trim()),
+  tags: Array.isArray(outfit.tags)
+    ? outfit.tags
+    : String(outfit.tags || "")
+        .replace(/[{}]/g, "")
+        .split(",")
+        .map((s) => s.trim()),
+                image: outfit.image_url,
+                emoji: "✨",
+                likes: String(outfit.likes),
+                description: outfit.description,
+              }}
+              onSave={() => saveOutfit(outfit)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
