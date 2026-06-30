@@ -1,62 +1,67 @@
 import OpenAI from "openai";
-
+import { FASHION_BRAIN } from "@/lib/data/ai/fashionBrain";
+import { TYLE_LIBRARY } from "@/lib/data/ai/tyleLibrary";
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: Request) {
-  try {
-    const { occasion } = await req.json();
-
-    const response = await client.responses.create({
-      model: "gpt-5.4-mini",
-      input: `
-You are TYLE, an elite AI menswear stylist for young men.
-
-Create ONE complete outfit recommendation for this occasion:
-
-Occasion: ${occasion}
-
-Rules:
-- Create a stylish, wearable outfit.
-- Do not ask for budget, style, colour, body type, or brands.
-- You choose the best aesthetic.
-- Include top, bottom, shoes, and one accessory.
-- Do not mention specific brands yet.
-- Use spendLevel instead of exact prices.
-- spendLevel must be one of: "Budget-friendly", "Mid-range", "Premium".
-- Keep the explanation short.
-- Return ONLY valid JSON.
-
-Format:
-{
-  "fit": {
-    "name": "Fit name",
-    "tags": ["tag 1", "tag 2", "tag 3"],
-    "items": [
-      {
-        "name": "Item name",
-        "detail": "Short detail"
-      }
-    ],
-    "why": "Short explanation of why this outfit works.",
-    "spendLevel": "Mid-range",
-    "imagePrompt": "A detailed full-body editorial fashion photo prompt for this outfit."
+    try {
+      const { prompt } = await req.json();
+  
+      const response = await client.responses.create({
+        model: "gpt-5.4-mini",
+        input: `
+  ${FASHION_BRAIN}
+  
+  TYLE LIBRARY:
+  ${JSON.stringify(TYLE_LIBRARY, null, 2)}
+  
+  Rules:
+  - You must compose the outfit using item types from the TYLE Library.
+  - You may choose colours only from the colour list.
+  - You can decide material, fit, texture, and styling details.
+  - Do not invent item types outside the library.
+  - Create ONE outfit.
+  - The outfit should feel modern, wearable, and easy to recreate.
+  - imagePrompt must describe a premium flat-lay outfit board.
+  - The image must show only clothing pieces.
+  - No person.
+  - No model.
+  - No face.
+  - No body.
+  - Clean black or neutral background.
+  - Each clothing item clearly visible.
+  
+  User Request:
+  ${prompt}
+  
+  Return ONLY valid JSON.
+  `,
+      });
+  
+      const text = response.output_text;
+      const data = JSON.parse(text);
+  
+      const image = await client.images.generate({
+        model: "gpt-image-1",
+        prompt: data.fit.imagePrompt,
+        size: "1024x1536",
+      });
+  
+      const imageBase64 = image.data?.[0]?.b64_json;
+  
+      data.fit.imageUrl = imageBase64
+        ? `data:image/png;base64,${imageBase64}`
+        : null;
+  
+      return Response.json(data);
+    } catch (error) {
+      console.error("Generate fit error:", error);
+  
+      return Response.json(
+        { error: "Failed to generate outfit" },
+        { status: 500 }
+      );
+    }
   }
-}
-`,
-    });
-
-    const text = response.output_text;
-    const data = JSON.parse(text);
-
-    return Response.json(data);
-  } catch (error) {
-    console.error("Generate fit error:", error);
-
-    return Response.json(
-      { error: "Failed to generate outfit" },
-      { status: 500 }
-    );
-  }
-}

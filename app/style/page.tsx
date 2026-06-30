@@ -3,7 +3,19 @@
 import Link from "next/link";
 import { useState } from "react";
 
+const quickPrompts = [
+    "First Date ❤️",
+    "Coffee ☕",
+    "Office 💼",
+    "Gym 🏋️",
+    "Night Out 🌙",
+    "Wedding 👔",
+    "Vacation ✈️",
+    "Party 🎉",
+  ];
+
 type FitItem = {
+  type?: string;
   name: string;
   detail: string;
 };
@@ -15,6 +27,7 @@ type Fit = {
   why: string;
   spendLevel: string;
   imagePrompt: string;
+  imageUrl?: string;
 };
 
 const occasions = [
@@ -26,6 +39,14 @@ const occasions = [
   { label: "Travel", icon: "✈️" },
 ];
 
+const loadingSteps = [
+    "Understanding your occasion",
+    "Selecting the best silhouette",
+    "Matching colours",
+    "Balancing proportions",
+    "Styling accessories",
+    "Generating your AI outfit",
+  ];
 function OccasionButton({
   selected,
   onClick,
@@ -53,13 +74,28 @@ function OccasionButton({
 }
 
 export default function StylePage() {
-  const [occasion, setOccasion] = useState("Date");
+  const [prompt, setPrompt] = useState("");
   const [fit, setFit] = useState<Fit | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [currentStep, setCurrentStep] = useState(0);
+
 
   async function generateFit() {
     setLoading(true);
+    setFit(null);
+    setCurrentStep(0);
+
+const interval = setInterval(() => {
+  setCurrentStep((prev) => {
+    if (prev >= loadingSteps.length - 1) {
+      clearInterval(interval);
+      return prev;
+    }
+
+    return prev + 1;
+  });
+}, 900);
     setError("");
     setFit(null);
 
@@ -69,7 +105,7 @@ export default function StylePage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ occasion }),
+        body: JSON.stringify({ prompt }),
       });
 
       const data = await res.json();
@@ -82,11 +118,13 @@ export default function StylePage() {
     } catch {
       setError("Failed to generate outfit. Try again.");
     } finally {
+      clearInterval(interval);
       setLoading(false);
     }
   }
 
   function saveGeneratedFit() {
+
     if (!fit) return;
 
     const saved = JSON.parse(localStorage.getItem("tyle-saved") || "[]");
@@ -106,6 +144,50 @@ export default function StylePage() {
     if (!alreadySaved) {
       localStorage.setItem("tyle-saved", JSON.stringify([...saved, savedFit]));
     }
+  }
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-black text-white">
+        <section className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 text-center">
+          <p className="text-sm uppercase tracking-[0.35em] text-purple-300">
+            TYLE AI
+          </p>
+  
+          <h1 className="mt-6 text-5xl font-black">
+            Creating your outfit
+          </h1>
+  
+          <p className="mt-5 text-lg leading-8 text-white/50">
+            Our AI stylist is building something you&apos;ll actually want to wear.
+          </p>
+  
+          <div className="mt-14 space-y-4 text-left">
+            {loadingSteps.map((step, index) => (
+              <div
+                key={step}
+                className={`flex items-center gap-3 rounded-2xl border border-white/10 p-4 transition-all duration-500 ${
+                  index <= currentStep
+                    ? "bg-white/[0.06] text-white opacity-100"
+                    : "bg-white/[0.02] text-white/30 opacity-50"
+                }`}
+              >
+                <span>{index < currentStep ? "✓" : "•"}</span>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+  
+          <div className="mt-10 h-2 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-white transition-all duration-700"
+              style={{
+                width: `${((currentStep + 1) / loadingSteps.length) * 100}%`,
+              }}
+            />
+          </div>
+        </section>
+      </main>
+    );
   }
 
   if (!fit) {
@@ -140,27 +222,43 @@ export default function StylePage() {
             </div>
 
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 shadow-2xl md:p-8">
-              <h3 className="text-xl font-bold">Choose occasion</h3>
+            <h3 className="text-xl font-bold">Describe your situation</h3>
+            <div className="flex flex-wrap gap-3 mb-6">
+  {quickPrompts.map((prompt) => (
+    <button
+      key={prompt}
+      type="button"
+      onClick={() => setPrompt(prompt)}
+      className="rounded-full border border-white/10 px-4 py-2 text-sm text-white hover:bg-white hover:text-black transition"
+    >
+      {prompt}
+    </button>
+  ))}
+</div>
+<textarea
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  placeholder={`Describe where you're going, the weather, or anything you already own.
 
-              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                {occasions.map((item) => (
-                  <OccasionButton
-                    key={item.label}
-                    selected={occasion === item.label}
-                    onClick={() => setOccasion(item.label)}
-                    icon={item.icon}
-                    label={item.label}
-                  />
-                ))}
-              </div>
+    Example:
+    
+    I'm going on a first date tonight.
+    It's around 18°C.
+    I only own white sneakers.
+    I want to look expensive but not overdressed.`}  className="mt-4 h-48 w-full rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
+/>
+                
 
               <button
                 onClick={generateFit}
                 disabled={loading}
                 className="mt-8 w-full rounded-full bg-white px-6 py-5 text-lg font-black text-black transition hover:bg-white/90 disabled:opacity-60"
               >
-                {loading ? "Creating your outfit..." : "✨ Style Me"}
+                {loading ? "Creating your outfit..." : "✨ Generate Outfit"}
               </button>
+              <p className="mt-3 text-center text-sm text-zinc-500">
+  AI creates a unique outfit in around 5–10 seconds.
+</p>
 
               {loading && (
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
@@ -177,7 +275,7 @@ export default function StylePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black pb-32 text-white">
+    <main className="min-h-screen bg-black pb-52 text-white">
       <section className="mx-auto max-w-7xl px-5 py-6 md:px-8">
         <nav className="flex items-center justify-between">
           <h1 className="text-3xl font-black tracking-tight">TYLE</h1>
@@ -205,18 +303,24 @@ export default function StylePage() {
           <h2 className="mt-3 text-5xl font-black leading-tight md:text-7xl">
             Here&apos;s your outfit.
           </h2>
-
-          <p className="mt-4 max-w-xl text-lg leading-8 text-white/60">
-            {fit.why}
-          </p>
         </section>
 
         <section className="mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03]">
           <div className="grid gap-0 lg:grid-cols-[1.2fr_0.9fr]">
-            <div className="relative min-h-[520px] border-b border-white/10 bg-gradient-to-br from-white/15 to-white/[0.02] lg:border-b-0 lg:border-r">
+            <div className="relative min-h-[420px] border-b border-white/10 bg-gradient-to-br from-white/15 to-white/[0.02] lg:border-b-0 lg:border-r">
               <div className="absolute inset-0 flex items-center justify-center p-8">
                 <div className="max-w-md text-center">
-                  <div className="text-8xl">🧍‍♂️</div>
+                  <div className="text-8xl">{fit.imageUrl ? (
+  <img
+    src={fit.imageUrl}
+    alt={fit.name}
+    className="h-full w-full object-cover"
+  />
+) : (
+  <div className="flex h-full items-center justify-center p-8 text-center">
+    <p className="text-white/50">Outfit image unavailable</p>
+  </div>
+)}</div>
                   <p className="mt-5 text-sm uppercase tracking-[0.25em] text-white/40">
                     Outfit image coming next
                   </p>
@@ -260,30 +364,41 @@ export default function StylePage() {
               <div className="my-8 h-px bg-white/10" />
 
               <h4 className="text-sm uppercase tracking-[0.2em] text-white/50">
-                Items
-              </h4>
+  Outfit Breakdown
+</h4>
 
-              <div className="mt-5 space-y-4">
-                {fit.items.map((item) => (
-                  <div key={item.name} className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-2xl">
-                      👕
-                    </div>
+<div className="mt-5 space-y-4">
+  {fit.items.map((item) => (
+    <div
+      key={item.name}
+      className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
+    >
+      <p className="text-xs uppercase tracking-[0.25em] text-purple-300">
+        {item.type || "Piece"}
+      </p>
 
-                    <div>
-                      <p className="font-bold">{item.name}</p>
-                      <p className="text-sm text-white/50">{item.detail}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      <p className="mt-2 text-xl font-black">{item.name}</p>
 
-              <div className="mt-8 rounded-2xl border border-white/10 p-5">
-                <p className="text-sm uppercase tracking-[0.2em] text-white/50">
-                  Spend level
-                </p>
-                <p className="mt-2 text-lg font-bold">{fit.spendLevel}</p>
-              </div>
+      <p className="mt-2 text-sm leading-6 text-white/50">
+        {item.detail}
+      </p>
+    </div>
+  ))}
+</div>              
+
+<div className="mt-8 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+  <p className="text-sm uppercase tracking-[0.2em] text-white/50">
+    Style Score
+  </p>
+
+  <p className="text-4xl font-black">
+     92/100
+  </p>
+
+  <p className="text-sm text-white/50">
+    {fit.spendLevel}
+  </p>
+</div>
 
               <button
                 onClick={saveGeneratedFit}
