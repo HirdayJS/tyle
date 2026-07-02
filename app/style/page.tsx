@@ -306,41 +306,72 @@ const interval = setInterval(() => {
         </section>
 
         <section className="mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03]">
-          <div className="grid gap-0 lg:grid-cols-[1.2fr_0.9fr]">
-            <div className="relative min-h-[420px] border-b border-white/10 bg-gradient-to-br from-white/15 to-white/[0.02] lg:border-b-0 lg:border-r">
-              <div className="absolute inset-0 flex items-center justify-center p-8">
-                <div className="max-w-md text-center">
-                  <div className="text-8xl">{fit.imageUrl ? (
-  <img
-    src={fit.imageUrl}
-    alt={fit.name}
-    className="h-full w-full object-cover"
-  />
-) : (
-  <div className="flex h-full items-center justify-center p-8 text-center">
-    <p className="text-white/50">Outfit image unavailable</p>
-  </div>
-)}</div>
-                  <p className="mt-5 text-sm uppercase tracking-[0.25em] text-white/40">
-                    Outfit image coming next
-                  </p>
-                  <p className="mt-4 text-sm leading-6 text-white/50">
-                    {fit.imagePrompt}
-                  </p>
-                </div>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.15fr_0.85fr]">            <div className="space-y-4 p-6 sm:p-8 lg:p-10">
+  <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+    Shop This Look
+  </p>
+
+  {fit.items?.map((item: any) => {
+    const product = item.products?.[0];
+
+    return (
+      <div
+        key={item.name}
+        className="rounded-3xl border border-white/10 bg-white/[0.04] p-4"
+      >
+        <p className="text-xs uppercase tracking-widest text-purple-300">
+          {item.type}
+        </p>
+
+        <h3 className="mt-2 text-xl font-bold">
+          {item.name}
+        </h3>
+
+        {product && (
+          <div className="mt-4 flex gap-4">
+            <img
+              src={product.thumbnail}
+              alt={product.title}
+              className="h-24 w-24 rounded-xl object-cover"
+            />
+
+            <div className="flex flex-col justify-between">
+              <div>
+                <p className="font-semibold">
+                  {product.title}
+                </p>
+
+                <p className="text-white/50">
+                  {product.source}
+                </p>
+
+                <p className="mt-1 font-bold">
+                  {product.price}
+                </p>
               </div>
 
-              <div className="absolute bottom-5 left-5 rounded-full bg-black/70 px-4 py-2 text-sm font-bold backdrop-blur">
-                ✨ AI Generated
-              </div>
+              <a
+                href={product.link}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-bold text-black"
+              >
+                Buy →
+              </a>
             </div>
+          </div>
+        )}
+      </div>
+    );
+  })}
+</div>
 
-            <div className="p-6 md:p-8">
+            <div className="p-6 sm:p-8 lg:p-10">
               <div className="inline-flex rounded-full border border-purple-400/40 bg-purple-400/10 px-4 py-2 text-sm font-bold text-purple-200">
                 ✨ AI Recommended
               </div>
 
-              <h3 className="mt-5 text-4xl font-black">{fit.name}</h3>
+              <h3 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-black">{fit.name}</h3>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {fit.tags.map((tag) => (

@@ -113,7 +113,7 @@ const searchText = `${outfit.title} ${outfit.description} ${outfitTags.join(
             </h3>
           </div>
         </div>
-
+        
         <div className="grid gap-6 md:grid-cols-2">
           {filteredOutfits.map((outfit) => (
             <OutfitCard

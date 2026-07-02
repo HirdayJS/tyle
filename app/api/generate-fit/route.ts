@@ -1,3 +1,4 @@
+import { searchProducts } from "@/lib/data/searchProducts";
 import OpenAI from "openai";
 import { FASHION_BRAIN } from "@/lib/data/ai/fashionBrain";
 import { TYLE_LIBRARY } from "@/lib/data/ai/tyleLibrary";
@@ -42,18 +43,34 @@ export async function POST(req: Request) {
   
       const text = response.output_text;
       const data = JSON.parse(text);
+
+      const productSearches = await Promise.all(
+        data.fit.items.map(async (item: any) => {
+          const query = `${item.name} men's clothing Australia`;
+      
+          const products = await searchProducts(query);
+      
+          return {
+            ...item,
+            products,
+          };
+        })
+      );
+      
+      data.fit.items = productSearches;
+      data.fit.imageUrl = null;
   
-      const image = await client.images.generate({
-        model: "gpt-image-1",
-        prompt: data.fit.imagePrompt,
-        size: "1024x1536",
-      });
+      // const image = await client.images.generate({
+      //   model: "gpt-image-1",
+      //   prompt: data.fit.imagePrompt,
+      //   size: "1024x1536",
+      // });
   
-      const imageBase64 = image.data?.[0]?.b64_json;
+      // const imageBase64 = image.data?.[0]?.b64_json;
   
-      data.fit.imageUrl = imageBase64
-        ? `data:image/png;base64,${imageBase64}`
-        : null;
+      // data.fit.imageUrl = imageBase64
+      //   ? `data:image/png;base64,${imageBase64}`
+      //   : null;
   
       return Response.json(data);
     } catch (error) {
