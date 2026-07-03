@@ -46,8 +46,16 @@ export async function POST(req: Request) {
 
       const productSearches = await Promise.all(
         data.fit.items.map(async (item: any) => {
-          const query = `${item.name} men's clothing Australia`;
-      
+          const query = [
+            item.colour,
+            item.fit,
+            item.material,
+            item.name,
+            "men",
+            "Australia",
+          ]
+            .filter(Boolean)
+            .join(" ");      
           const products = await searchProducts(query);
       
           return {

@@ -312,58 +312,83 @@ const interval = setInterval(() => {
   </p>
 
   {fit.items?.map((item: any) => {
-    const product = item.products?.[0];
+  const product = item.products?.[0];
 
-    return (
-      <div
-        key={item.name}
-        className="rounded-3xl border border-white/10 bg-white/[0.04] p-4"
-      >
-        <p className="text-xs uppercase tracking-widest text-purple-300">
+  return (
+    <div
+      key={item.name}
+      className="rounded-[28px] border border-white/5 bg-white/[0.035] p-5 backdrop-blur-xl"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-widest text-purple-300">
           {item.type}
-        </p>
+        </span>
 
-        <h3 className="mt-2 text-xl font-bold">
-          {item.name}
-        </h3>
+        <span className="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-400">
+          97% Match
+        </span>
+      </div>
 
-        {product && (
-          <div className="mt-4 flex gap-4">
-            <img
-              src={product.thumbnail}
-              alt={product.title}
-              className="h-24 w-24 rounded-xl object-cover"
-            />
+      <h3 className="mt-3 text-2xl font-black text-white">
+        {item.name}
+      </h3>
 
-            <div className="flex flex-col justify-between">
-              <div>
-                <p className="font-semibold">
-                  {product.title}
-                </p>
+      {product ? (
+        <div className="mt-5 space-y-4">
+{product.thumbnail && (
+  <div className="flex h-72 items-center justify-center rounded-2xl bg-white p-6">
+    <img
+      src={product.thumbnail}
+      alt={product.title}
+      className="max-h-full max-w-full object-contain transition-transform duration-300 hover:scale-105"
+    />
+  </div>
+)}
 
-                <p className="text-white/50">
-                  {product.source}
-                </p>
+          <div>
+            <p className="line-clamp-2 text-base font-semibold text-white/90">
+              {product.title}
+            </p>
 
-                <p className="mt-1 font-bold">
-                  {product.price}
-                </p>
-              </div>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs text-white/60">
+                {product.source}
+              </span>
 
-              <a
-                href={product.link}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-bold text-black"
+              <p className="text-3xl font-black text-white">
+                {product.price}
+              </p>
+            </div>
+
+            <div className="mt-5 flex items-center gap-5">
+              {product.link && (
+                <a
+                  href={product.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-bold text-purple-300 transition hover:text-white"
+                >
+                  View Product →
+                </a>
+              )}
+
+              <button
+                type="button"
+                className="text-sm font-bold text-white/50 transition hover:text-white"
               >
-                Buy →
-              </a>
+                Swap Item
+              </button>
             </div>
           </div>
-        )}
-      </div>
-    );
-  })}
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-white/40">
+          No product found yet.
+        </p>
+      )}
+    </div>
+  );
+})}
 </div>
 
             <div className="p-6 sm:p-8 lg:p-10">
