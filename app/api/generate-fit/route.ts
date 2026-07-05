@@ -1,4 +1,4 @@
-import { searchProducts } from "@/lib/data/searchProducts";
+import { TYLE_STYLE_DNA } from "@/lib/data/ai/styleDNA";
 import OpenAI from "openai";
 import { FASHION_BRAIN } from "@/lib/data/ai/fashionBrain";
 import { TYLE_LIBRARY } from "@/lib/data/ai/tyleLibrary";
@@ -17,7 +17,9 @@ export async function POST(req: Request) {
   
   TYLE LIBRARY:
   ${JSON.stringify(TYLE_LIBRARY, null, 2)}
-  
+  CURRENT STYLE DNA:
+
+${JSON.stringify(TYLE_STYLE_DNA, null, 2)}
   Rules:
   - You must compose the outfit using item types from the TYLE Library.
   - You may choose colours only from the colour list.
@@ -43,29 +45,14 @@ export async function POST(req: Request) {
   
       const text = response.output_text;
       const data = JSON.parse(text);
-
-      const productSearches = await Promise.all(
-        data.fit.items.map(async (item: any) => {
-          const query = [
-            item.colour,
-            item.fit,
-            item.material,
-            item.name,
-            "men",
-            "Australia",
-          ]
-            .filter(Boolean)
-            .join(" ");      
-          const products = await searchProducts(query);
+      data.fit.items = data.fit.items.map((item: any, index: number) => ({
+        ...item,
+        id: index + 1,
+        status: "loading",
+        products: [],
+      }));
       
-          return {
-            ...item,
-            products,
-          };
-        })
-      );
-      
-      data.fit.items = productSearches;
+      data.fit.imageUrl = null;
       data.fit.imageUrl = null;
   
       // const image = await client.images.generate({

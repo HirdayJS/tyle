@@ -80,7 +80,43 @@ export default function StylePage() {
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
 
-
+  async function findProduct(item: any) {
+    try {
+      console.log("🔍 Searching:", item.name);
+      const res = await fetch("/api/find-product", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ item }),
+      });
+  
+      const data = await res.json();
+      console.log("✅ Finished:", item.name);
+      setFit((prev: any) => {
+        if (!prev) return prev;
+  
+        return {
+          ...prev,
+          items: prev.items.map((i: any) =>
+            i.id === data.id
+              ? {
+                  ...i,
+                  products: data.products,
+                  status: "done",
+                }
+              : i
+          ),
+        };
+      });
+    } catch (err) {
+      console.error("❌ Failed:", item.name, err);    }
+  }
+  async function loadProducts(items: any[]) {
+    for (const item of items) {
+      await findProduct(item);
+    }
+  }
   async function generateFit() {
     setLoading(true);
     setFit(null);
@@ -110,11 +146,15 @@ const interval = setInterval(() => {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "Something went wrong");
-      }
+if (!res.ok) {
+  throw new Error(data.error || "Something went wrong");
+}
 
-      setFit(data.fit);
+// Show the outfit immediately
+setFit(data.fit);
+
+// Start finding products
+loadProducts(data.fit.items);
     } catch {
       setError("Failed to generate outfit. Try again.");
     } finally {
@@ -333,7 +373,19 @@ const interval = setInterval(() => {
         {item.name}
       </h3>
 
-      {product ? (
+      {item.status === "loading" ? (
+  <div className="flex h-72 flex-col items-center justify-center rounded-2xl bg-white/[0.03] border border-white/5">
+    <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-purple-400"></div>
+
+    <p className="mt-6 text-white/70 font-medium">
+      Finding the perfect {item.name}...
+    </p>
+
+    <p className="mt-2 text-sm text-white/40">
+      Comparing products across stores
+    </p>
+  </div>
+) : product ? (
         <div className="mt-5 space-y-4">
 {product.thumbnail && (
   <div className="flex h-72 items-center justify-center rounded-2xl bg-white p-6">

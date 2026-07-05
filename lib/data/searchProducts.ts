@@ -28,7 +28,7 @@ export type ProductResult = {
   
     const data = await res.json();
   
-    return (data.shopping_results || []).slice(0, 3).map((item: any) => ({
+    return (data.shopping_results || []).slice(0, 1).map((item: any) => ({
       title: item.title,
       price: item.price,
       source: item.source,
